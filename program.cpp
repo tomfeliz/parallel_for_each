@@ -1,11 +1,12 @@
+#include <atomic>
 #include <iostream>
+#include <mutex>
+#include <numeric>
+#include <random>
+#include <string>
 #include <vector>
 
 #include "parallel.h"
-#include <numeric>
-#include <mutex>
-#include <atomic>
-#include <string>
 
 uint64_t fibonacci(uint64_t n)
 {
@@ -17,28 +18,38 @@ uint64_t fibonacci(uint64_t n)
 
 int main()
 {
-	std::vector<uint64_t> data(300);
-	std::fill(begin(data), end(data), 35);
 	std::mutex mutex_cons;
 	std::atomic<int> count = 0;
 
-	const auto nthreads = std::thread::hardware_concurrency();
-	std::cout << "Using " << nthreads << " execution threads." << std::endl;
+	std::vector<int> data(1000);
+	std::default_random_engine rand_eng{};
+	std::uniform_int_distribution<int> dist{ 20, 40 };
+	std::for_each(begin(data), end(data), [&rand_eng, &dist](int& n)
+	{
+		n = dist(rand_eng);
+	});
 
-	// Set global start clock
-	const auto start0 = clock();
+	const auto threads = std::thread::hardware_concurrency();
+	std::cout << "Using " << threads << " execution threads." << std::endl;
+
+	const auto startGlobal = clock();
 
 	parallel_for_each(begin(data), end(data), [&mutex_cons, &count](uint64_t n)
 	{
+		const auto start = clock();
 		auto fib = fibonacci(n);
 
+		auto finish = clock();
 		mutex_cons.lock();
-		std::cout << "Result " << ++count << ", Thread " << std::this_thread::get_id() << " : fibonacci(" << n << ") = " << fib << std::endl;
+		std::cout << "Result " << ++count << ", Thread " << std::this_thread::get_id() 
+			<< " : fibonacci(" << n << ") = " << fib << " (" 
+			<< static_cast<float>(finish - start) / CLOCKS_PER_SEC << " ms)" << std::endl;
 		mutex_cons.unlock();
 	});
 
-	auto finish0 = clock();
-	std::cout << "Total execution time: " << static_cast<float>(finish0 - start0) / CLOCKS_PER_SEC << " seconds" << std::endl;
+	auto finishGlobal = clock();
+	std::cout << "Total execution time: " << static_cast<float>(finishGlobal - startGlobal) / CLOCKS_PER_SEC 
+		<< " seconds" << std::endl;
 
 	std::string temp;
 	std::cout << "Press enter to terminate program..." << std::endl;
