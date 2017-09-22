@@ -35,3 +35,4 @@
 *.user
 x64/
 *.opendb
+*.suo
