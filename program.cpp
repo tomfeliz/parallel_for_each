@@ -22,7 +22,7 @@ int main()
 	std::mutex mutex_cons; // protest default console output
 	std::atomic<int> count = 0; // atomic result counter
 
-	std::vector<int> data(19); // adjust vector length to increse/decrease running time
+	std::vector<int> data(1000); // adjust vector length to increse/decrease running time
 
 	// Populate test data vector with random Fibonacci seeds (in a range)
 	std::default_random_engine rand_eng{};
